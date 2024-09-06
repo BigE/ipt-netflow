@@ -5016,8 +5016,8 @@ static unsigned int netflow_target(
 	memset(&tuple, 0, sizeof(tuple));
 	tuple.l3proto = family;
 #ifdef ENABLE_PHYSDEV_OVER
-	if (nf_bridge_info_get(skb) && nf_bridge_info_get(skb)->physindev)
-		tuple.i_ifc = nf_bridge_info_get(skb)->physindev->ifindex;
+	if (nf_bridge_info_get(skb) && nf_bridge_info_get(skb)->physinif)
+		tuple.i_ifc = nf_bridge_info_get(skb)->physinif;
 	else /* FALLTHROUGH */
 #endif
 	tuple.i_ifc	= if_in? if_in->ifindex : -1;
@@ -5296,14 +5296,19 @@ do_protocols:
 			out = resolve_snmp(nf_bridge_info_get(skb)->physdev); \
 		else \
 			out = resolve_snmp(dev);
+#define copy_if(out, physif, dev) \
+	if (nf_bridge_info_get(skb) && nf_bridge_info_get(skb)->physif) \
+		out = nf_bridge_info_get(skb)->physif; \
+	else \
+		out = resolve_snmp(dev);
 #ifdef ENABLE_PHYSDEV
 		copy_dev(nf->o_ifphys, physoutdev, if_out);
-		copy_dev(nf->i_ifphys, physindev, if_in);
+		copy_if(nf->i_ifphys, physinif, if_in);
 #endif
 #ifdef SNMP_RULES
 # ifdef ENABLE_PHYSDEV_OVER
 		copy_dev(nf->o_ifcr, physoutdev, if_out);
-		copy_dev(nf->i_ifcr, physindev, if_in);
+		copy_if(nf->i_ifcr, physinif, if_in);
 # else
 		nf->o_ifcr = resolve_snmp(if_out);
 		nf->i_ifcr = resolve_snmp(if_in);
